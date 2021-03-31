@@ -12,19 +12,21 @@ fn sha1(message : &str) -> String {
     let mut byte_str : String = message_bytes.iter()
         .map(|b| format!("{:08b}",*b)).collect();
 
+
+
     byte_str.push('1');
 
     while byte_str.len() % 512 != 448 {
         byte_str.push('0');
     }
 
-    let message_len : u64 = (message.len()*8) as u64;
+    let message_len : u64 = (message_bytes.len()*8) as u64;//possibly incorrect len value
 
     let len_str : String = message_len.to_be_bytes()
         .iter().map(|b| format!("{:08b}",*b)).collect();
 
     byte_str.push_str(len_str.as_str());
-
+    println!("{:?}", byte_str.len());
     let mut chunks : Vec<String> = vec![byte_str.clone()];
     //todo! remove clone if last use
 
@@ -34,6 +36,7 @@ fn sha1(message : &str) -> String {
         chunks[0] = temp.0.to_owned();
         chunks.push(temp.1.to_owned());
     }
+
     let mut words : Vec<Vec<u32>> = chunks.iter().map(|chunk| {
         chunk.chars().collect::<Vec<char>>()
             .chunks(32).map(|c| u32::from_str_radix(c.iter()
@@ -58,7 +61,7 @@ fn sha1(message : &str) -> String {
             chunk_mut.push(new_word);
         }
         chunk_mut
-    }).collect();
+    }).collect(); //
 
     let mut h0 : u32 = 0x67452301;
     let mut h1 : u32 = 0xEFCDAB89;
@@ -72,7 +75,7 @@ fn sha1(message : &str) -> String {
     let mut d = h3.clone();
     let mut e = h4.clone();
 
-    for i in 0..words_extended.len() {
+    for i in 0..words_extended.len() {//problem in here
         for j in 0..80 {
             let f : u32;
             let k : u32;
@@ -112,11 +115,13 @@ fn sha1(message : &str) -> String {
             b=a;
             a=temp;
         }
+        println!("{:032b}, {:032b}, {:032b}", h0,h1,h2);
         h0 = h0.overflowing_add(a).0;
         h1 = h1.overflowing_add(b).0;
         h2 = h2.overflowing_add(c).0;
         h3 = h3.overflowing_add(d).0;
         h4 = h4.overflowing_add(e).0;
+        println!("{:032b}, {:032b}, {:032b}", h0,h1,h2);
     }
 
     //println!("{:?}, {:?}, {:?}", words_extended, words_extended[0].len(), words_extended[0][0]);
@@ -134,6 +139,7 @@ fn sha1_test(){
 }
 
 fn main() -> Result<(), ()>{
+    println!("{}",sha1("A Test"));
     println!("{}",sha1("The quick brown fox jumps over the lazy dog"));
     println!("{}",sha1("The quick brown fox jumps over the lazy cog"));
     println!("{}",sha1("1397552400WHDQ9I4W5FZSCCI0"));
