@@ -1,56 +1,70 @@
 //use std::io::{Write, stdout};
 
-//use crossterm::{execute, ExecutableCommand, cursor, Result};
+//use crossterm::{execute, ExecutableCommand, cursor};
 
-use std::{mem::size_of, string};
+use std::string;
 
-fn str_to_vec_u8(key : &str) -> Vec<u8> {
-    let mut message : Vec<u8> = vec![];
-    for char in key.as_bytes() {
-        message.push(char.clone());
+
+fn sha1(message : &str) -> String {
+    let message_bytes : Vec<u8> = message.chars().collect::<Vec<char>>()
+        .iter().map(|c| (*c as u8)).collect::<Vec<u8>>();
+
+    let mut byte_str : String = message_bytes.iter()
+        .map(|b| format!("{:08b}",*b)).collect();
+
+    byte_str.push('1');
+
+    while byte_str.len() % 512 != 448 {
+        byte_str.push('0');
     }
-    message
-}
 
-fn rotate_left(x : u32, n : u32) -> u32 {
-    let n = n%32;
-    (x<<n) | (x>> (32-n) %32)
-}
+    let message_len : u64 = (message.len()*8) as u64;
 
-fn sha1(message : &str) -> Vec<u8> {
-    let mut hash : Vec<u8> = vec![20; 0b00000000];
+    let len_str : String = message_len.to_be_bytes()
+        .iter().map(|b| format!("{:08b}",*b)).collect();
+
+    byte_str.push_str(len_str.as_str());
+
+    let mut chunks : Vec<String> = vec![byte_str.clone()];
+    //todo! remove clone if last use
+
+    while chunks[0].len() > 512 {
+        let mut chunk = chunks[0].clone();
+        let temp = chunk.split_at_mut(512);
+        chunks[0] = temp.0.to_owned();
+        chunks.push(temp.1.to_owned());
+    }
+    let mut words : Vec<Vec<u32>> = chunks.iter().map(|chunk| {
+        chunk.chars().collect::<Vec<char>>()
+            .chunks(32).map(|c| u32::from_str_radix(c.iter()
+            .collect::<String>().as_str(), 2).unwrap())
+            .collect::<Vec<u32>>()
+    }).collect();
+
+    let words_extended : Vec<Vec<u32>> = words.iter().map(|chunk| {
+        let mut chunk_mut = chunk.clone();
+        for i in 16..80 {
+            let word_a = chunk_mut[i-3];
+            let word_b = chunk_mut[i-8];
+            let word_c = chunk_mut[i-14];
+            let word_d = chunk_mut[i-16];
+
+            let xor_a = word_a ^ word_b;
+            let xor_b = xor_a ^ word_c;
+            let xor_c = xor_b ^ word_d;
+
+            let new_word = xor_c.rotate_left(1);
+
+            chunk_mut.push(new_word);
+        }
+        chunk_mut
+    }).collect();
+
     let mut h0 : u32 = 0x67452301;
     let mut h1 : u32 = 0xEFCDAB89;
     let mut h2 : u32 = 0x98BADCFE;
     let mut h3 : u32 = 0x10325476;
     let mut h4 : u32 = 0xC3D2E1F0;
-
-    let ml = message.len()*8;
-
-    let mut mut_message : String = String::from(message);
-    mut_message.push(0x80 as char);
-
-    let mut append_k = ((mut_message.len()*8) % 512) as i64;
-    while !(append_k == 0) {
-        mut_message.push(0x00 as char);
-        append_k = ((mut_message.len()*8) % 512) as i64;
-    }
-
-    //as the message will always be less than 512 bytes,
-    //breaking the mutable message into 512 byte chunks is unnecessary
-
-    let mut words : Vec<u32> = vec![0; 16];
-    for word_index in 0..16{
-        let mut word : u32 = 0;
-        for x in 0..4{
-            word += ((mut_message.as_bytes()[word_index*4+x]) as usize * x.pow(2)) as u32;
-        }
-        words[word_index] = word;
-    }
-
-    for i in 16..80 {
-        words.push(rotate_left(words[i-3] ^ words[i-8] ^ words[i-14] ^ words[i-16],1));
-    }
 
     let mut a = h0.clone();
     let mut b = h1.clone();
@@ -58,76 +72,71 @@ fn sha1(message : &str) -> Vec<u8> {
     let mut d = h3.clone();
     let mut e = h4.clone();
 
+    for i in 0..words_extended.len() {
+        for j in 0..80 {
+            let f : u32;
+            let k : u32;
+            if j < 20 {
+                let b_and_c = b & c;
+                let d_and_not_b = d & !b;
+                f = b_and_c | d_and_not_b;
+                k = 0x5A827999;
+            }
+            else if i < 40 {
+                let b_xor_c = b ^ c;
+                f = b_xor_c ^ d;
+                k = 0x5A827999;
+            }
+            else if i < 60 {
+                let b_and_c = b & c;
+                let b_and_d = b & d;
+                let c_and_d = c & d;
+                f = b_and_c | b_and_d | c_and_d;
+                k = 0x5A827999;
+            }
+            else {
+                let b_xor_c = b ^ c;
+                f = b_xor_c ^ d;
+                k = 0xCA62C1D6;
+            }
 
-    for i in 0..80 {
-        let mut f : u32;
-        let mut k : u32;
-        if 0<= i && i<= 19 {
-            f = (b & c) | ((!b) & d);
-            k  = 0x5A827999;
-        }
-        else if i <= 39 {
-            f = b ^ c ^ d;
-            k  = 0x6ED9EBA1;
-        }
-        else if i <= 59 {
-            f = (b & c) | (b & d) | (c & d);
-            k  = 0x8F1BBCDC;
-        }
-        else if i <= 79 {
-            f = b ^ c ^ d;
-            k  = 0xCA62C1D6;
-        }
-        else {
-            unreachable!("i exceded 79 in hash function!");
-        }
+            let word = words_extended[i][j];
+            let temp_a = a.rotate_left(5).overflowing_add(f).0;
+            let temp_b = temp_a.overflowing_add(e).0;
+            let temp_c = temp_b.overflowing_add(k).0;
+            let temp = temp_c.overflowing_add(word).0;
 
-        let temp : usize = (rotate_left(a, 5) + f + e + k + words[i]) as usize;
-        e = d;
-        d = c;
-        c = rotate_left(b, 30);
-        b = a;
-        a = temp as u32;
+            e=d;
+            d=c;
+            c=b.rotate_left(30);
+            b=a;
+            a=temp;
+        }
+        h0 = h0.overflowing_add(a).0;
+        h1 = h1.overflowing_add(b).0;
+        h2 = h2.overflowing_add(c).0;
+        h3 = h3.overflowing_add(d).0;
+        h4 = h4.overflowing_add(e).0;
     }
 
-    h0 = h0 + a;
-    h1 = h1 + b;
-    h2 = h2 + c;
-    h3 = h3 + d;
-    h4 = h4 + e;
+    //println!("{:?}, {:?}, {:?}", words_extended, words_extended[0].len(), words_extended[0][0]);
 
-    let h0_str = format!("{:X}", h0);
-    let h1_str = format!("{:X}", h1);
-    let h2_str = format!("{:X}", h2);
-    let h3_str = format!("{:X}", h3);
-    let h4_str = format!("{:X}", h4);
-    let hex = "0x".to_string();
-
-    let mut hash_str = hex.clone() + &h0_str + &h1_str + &h2_str + &h3_str + &h4_str;
-    str_to_vec_u8(&hash_str)
+    format!("{:x}{:x}{:x}{:x}{:x}", h0,h1,h2,h3,h4)
 }
 
+#[test]
+fn sha1_test(){
+    let precomputed_hash = "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12";
 
-fn sha1_test() {
-    let key = "WHDQ9I4W5FZSCCI0";
-    let time = "1397552400";
+    let hashed = sha1("The quick brown fox jumps over the lazy dog");
 
-    let mut precomputed_hash : Vec<u8> = vec![0xf7, 0x70, 0x2a, 0xd6, 0x25, 0x4a, 0x06, 0xf3, 0x3f, 0x7d, 0xcb, 0x95, 0x20, 0x00, 0xcb, 0xff, 0xa8, 0xb3, 0xc7, 0x2e];
-
-    assert_eq!(precomputed_hash[0], 0xf7);
-
-    let m = time.to_owned()+key;
-    let message = m.as_str();
-
-    let hashed = sha1(message.clone());
-
-
-    println!("{:?} {:?}", hashed.len(), precomputed_hash.len());
-    assert_eq!(hashed, precomputed_hash)
+    assert_eq!(hashed, precomputed_hash);
 }
 
 fn main() -> Result<(), ()>{
-    sha1_test();
+    println!("{}",sha1("The quick brown fox jumps over the lazy dog"));
+    println!("{}",sha1("The quick brown fox jumps over the lazy cog"));
+    println!("{}",sha1("1397552400WHDQ9I4W5FZSCCI0"));
 
     Ok(())
 }
