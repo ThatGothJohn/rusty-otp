@@ -4,15 +4,13 @@
 
 extern crate sha1;
 
-use std::string;
-
 fn hmac_sha1 (mut key: String, message: String) -> Result<String, ()> {
     const BLOCKSIZE: usize = 512;
     if key.len() * 8 > BLOCKSIZE {
         key = sha1::Sha1::from(key).digest().to_string();
     } else {
         while key.len() * 8 < BLOCKSIZE {
-            key.push(0b00000000 as u8 as char);
+            key.push('\0');
         }
     }
 
@@ -26,6 +24,7 @@ fn hmac_sha1 (mut key: String, message: String) -> Result<String, ()> {
         o_key_pad[i] = key_bytes[i] ^ 0x5c;
     }
 
+    //FIXME: do better error handling
     let i_key_pad_string = String::from_utf8(i_key_pad.to_vec()).unwrap();
     let o_key_pad_string = String::from_utf8(o_key_pad.to_vec()).unwrap();
 
@@ -36,6 +35,7 @@ fn hmac_sha1 (mut key: String, message: String) -> Result<String, ()> {
 
     Ok(ret.to_owned())
 }
+
 
 
 #[test]
@@ -55,7 +55,6 @@ fn sha1_test(){
 }
 
 fn main() -> Result<(), ()>{
-
 
     Ok(())
 }
