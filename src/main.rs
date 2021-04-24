@@ -89,7 +89,11 @@ fn main() -> Result<(), ()>{
 
     for i in 0..173 {
         println!("{}, {}", i, generate_totp().unwrap());
+<<<<<<< HEAD
         thread::sleep(time::Duration::from_millis(15000));
+=======
+        thread::sleep(time::Duration::from_millis(1000));
+>>>>>>> 0b3cb586919dd71ab74002345ca098379697fe46
     }
 
 
