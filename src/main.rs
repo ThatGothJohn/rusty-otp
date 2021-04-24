@@ -81,21 +81,16 @@ fn test_suite(){
     let otp_code = dynamic_truncation(hmac_string.clone()).unwrap();
 
     assert_eq!(otp_code,"098426".to_owned());
+
+    for i in 0..3 {
+        eprintln!("{}, {}", i, generate_totp().unwrap());
+        thread::sleep(time::Duration::from_millis(15000));
+    }
 }
 
 const SECRET_KEY : &str = "InsecureSecret1234";
 
 fn main() -> Result<(), ()>{
-
-    for i in 0..173 {
-        println!("{}, {}", i, generate_totp().unwrap());
-<<<<<<< HEAD
-        thread::sleep(time::Duration::from_millis(15000));
-=======
-        thread::sleep(time::Duration::from_millis(1000));
->>>>>>> 0b3cb586919dd71ab74002345ca098379697fe46
-    }
-
 
     Ok(())
 }
