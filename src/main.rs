@@ -1,4 +1,4 @@
-use std::{convert::TryInto, time, thread};
+use std::{convert::TryInto, time, thread, env};
 //use std::io::{Write, stdout};
 
 //use crossterm::{execute, ExecutableCommand, cursor};
@@ -85,7 +85,6 @@ fn test_suite(){
     let mut totps : Vec<String> = vec![];
     for i in 0..3 {
         totps.push(generate_totp().unwrap());
-        eprintln!("{}, {}", i, totps[i]);
         thread::sleep(time::Duration::from_millis(15000));
     }
     assert!(totps[0]==totps[1] && totps[1] != totps[2]
@@ -94,8 +93,40 @@ fn test_suite(){
 
 const SECRET_KEY : &str = "InsecureSecret1234";
 
+//\x1b[38;2;<r>;<g>;<b>m     #Select RGB foreground color
+//\x1b[48;2;<r>;<g>;<b>m     #Select RGB Background color
+
 fn main() -> Result<(), ()>{
 
+    let mode = std::env::args().nth(1).expect("Please specify mode (g/v)");
+
+    let move_one_line_up_and_clear_line = "\x1b[1A\x1b[2K";
+    let white = "\x1b[38;2;255;255;255m";
+    let red = "\x1b[38;2;255;30;10m";
+    let purple = "\x1b[38;2;255;50;220m";
+    let mut i = 0;
+
+    match mode.as_str() {
+        "g"=>{
+            println!("{}Generator mode!\n",white);
+            loop {
+                let time_remaining = 30-(time::SystemTime::now().
+                    duration_since(time::UNIX_EPOCH).unwrap().as_secs() % 30);
+                println!("{}{}Your totp code: {}{}{}, valid for {}{} seconds{}",
+                    move_one_line_up_and_clear_line, white,
+                    red, generate_totp().unwrap(), white,
+                    purple, time_remaining, white);
+                thread::sleep(time::Duration::from_millis(50));
+            }
+        },
+        "v"=>{
+            println!("{}Verifier mode!\n",white);
+            loop {
+                
+            }
+        },
+        _=>eprintln!("Invalid mode specified")
+    }
 
     Ok(())
 }
