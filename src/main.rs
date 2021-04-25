@@ -98,7 +98,7 @@ const SECRET_KEY : &str = "InsecureSecret1234";
 
 fn main() -> Result<(), ()>{
 
-    let mode = std::env::args().nth(1).expect("Please specify mode (g/v)");
+    let mode = std::env::args().nth(1).unwrap_or("g".to_owned());
 
     let move_one_line_up_and_clear_line = "\x1b[1A\x1b[2K";
     let white = "\x1b[38;2;255;255;255m";
@@ -116,13 +116,13 @@ fn main() -> Result<(), ()>{
                     move_one_line_up_and_clear_line, white,
                     red, generate_totp().unwrap(), white,
                     purple, time_remaining, white);
-                thread::sleep(time::Duration::from_millis(50));
+                thread::sleep(time::Duration::from_millis(100));
             }
         },
         "v"=>{
             println!("{}Verifier mode!\n",white);
             loop {
-                
+
             }
         },
         _=>eprintln!("Invalid mode specified")
