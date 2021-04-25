@@ -97,10 +97,10 @@ fn main() -> Result<(), ()>{
 
     let mode = env::args().nth(1).unwrap_or("g".to_owned());
 
-    let move_one_line_up_and_clear_line = "\x1b[1A\x1b[2K";
-    let white = "\x1b[38;2;255;255;255m";
-    let red = "\x1b[38;2;255;30;10m";
-    let purple = "\x1b[38;2;255;50;220m";
+    let move_one_line_up_and_clear_line = if cfg!(unix) {"\x1b[1A\x1b[2K"} else {""};
+    let white = if cfg!(unix) {"\x1b[38;2;255;255;255m"} else {""};
+    let red = if cfg!(unix) {"\x1b[38;2;255;30;10m"} else {""};
+    let purple = if cfg!(unix) {"\x1b[38;2;255;50;220m"} else {""};
 
     match mode.as_str() {
         "g"=>{
