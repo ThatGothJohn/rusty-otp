@@ -1,7 +1,4 @@
-use std::{convert::TryInto, time, thread, env};
-//use std::io::{Write, stdout};
-
-//use crossterm::{execute, ExecutableCommand, cursor};
+use std::{convert::TryInto, time, thread, env, io};
 
 extern crate sha1;
 
@@ -104,7 +101,6 @@ fn main() -> Result<(), ()>{
     let white = "\x1b[38;2;255;255;255m";
     let red = "\x1b[38;2;255;30;10m";
     let purple = "\x1b[38;2;255;50;220m";
-    let mut i = 0;
 
     match mode.as_str() {
         "g"=>{
@@ -121,8 +117,26 @@ fn main() -> Result<(), ()>{
         },
         "v"=>{
             println!("{}Verifier mode!\n",white);
+            let mut input : String;
             loop {
+                input = String::new();
+                match io::stdin().read_line(&mut input) {
+                    Ok(_n) => {
+                        let totp_code = generate_totp().unwrap();
+                        input = input.trim().to_owned();
+                        if input == totp_code {
+                            println!("{}{}Input: {}, matched the totp code!",
+                            move_one_line_up_and_clear_line, move_one_line_up_and_clear_line,
+                            input);
+                        } else {
+                            eprintln!("{}{}Input: {}, Didn't match the totp code <:(",
+                            move_one_line_up_and_clear_line, move_one_line_up_and_clear_line,
+                            input);
+                        }
 
+                    }
+                    Err(error) => eprintln!("{}error {:?}{}", red, error, white)
+                }
             }
         },
         _=>eprintln!("Invalid mode specified")
