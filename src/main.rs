@@ -82,15 +82,20 @@ fn test_suite(){
 
     assert_eq!(otp_code,"098426".to_owned());
 
+    let mut totps : Vec<String> = vec![];
     for i in 0..3 {
-        eprintln!("{}, {}", i, generate_totp().unwrap());
+        totps.push(generate_totp().unwrap());
+        eprintln!("{}, {}", i, totps[i]);
         thread::sleep(time::Duration::from_millis(15000));
     }
+    assert!(totps[0]==totps[1] && totps[1] != totps[2]
+        || totps[1]==totps[2] && totps[1] != totps[0]);
 }
 
 const SECRET_KEY : &str = "InsecureSecret1234";
 
 fn main() -> Result<(), ()>{
+
 
     Ok(())
 }
