@@ -2,6 +2,9 @@ use std::{convert::TryInto, time, thread, env, io};
 
 extern crate sha1;
 
+//TODO: better args parsing
+//TODO: better error handling
+
 fn hmac_sha1 (mut key: String, message: String) -> Result<String, ()> {
     const BLOCKSIZE: usize = 512;
     if key.len() * 8 > BLOCKSIZE {
