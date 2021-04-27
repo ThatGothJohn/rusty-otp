@@ -61,31 +61,49 @@ fn generate_totp () -> Result<String, ()> {
 
 
 #[test]
-fn test_suite(){
-    let precomputed_hash = "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12";
-
+fn test_sha1(){
     let hashed = sha1::Sha1::from("The quick brown fox jumps over the lazy dog").digest();
 
-    assert_eq!(hashed.to_string(), precomputed_hash);
+    assert_eq!(hashed.to_string(), "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12");
+                                            //check the generated hash string is correct
+                                            //by comapring against a precomputed hash
+}
 
+#[test]
+fn test_hmac(){
     let test_key = "WHDQ9I4W5FZSCCI0".to_owned();
     let test_message = "1397552400".to_owned();
 
     let hmac_string = hmac_sha1(test_key,test_message).unwrap();
 
     assert_eq!(hmac_string, "206bfb33934df4f39580897444fa0371776bf97a");
+                                              //check the generated hmac string is correct
+                                              //by comapring against a precomputed hmac
+}
 
-    let otp_code = dynamic_truncation(hmac_string.clone()).unwrap();
+#[test]
+fn test_truncation(){
+    let hmac_string = "206bfb33934df4f39580897444fa0371776bf97a".to_owned();
 
-    assert_eq!(otp_code,"098426".to_owned());
+    let otp_code = dynamic_truncation(hmac_string).unwrap();
 
+    assert_eq!(otp_code,"098426".to_owned()); //check that the truncated code is correct
+                                              //by comparing against a precomputed code
+}
+
+#[test]
+fn test_totp_generation(){
     let mut totps : Vec<String> = vec![];
     for _i in 0..3 {
-        totps.push(generate_totp().unwrap());
-        thread::sleep(time::Duration::from_millis(15000));
+        let totp = generate_totp().unwrap();
+        assert!(totp.len() == 6); //check that the generated code is 6 digits
+        assert!(totp.chars().all(char::is_numeric)); //check that the totp only contains numbers
+        totps.push(totp);
+        thread::sleep(time::Duration::from_millis(15000)); //only generate a new code every 15secs
     }
     assert!(totps[0]==totps[1] && totps[1] != totps[2]
         || totps[1]==totps[2] && totps[1] != totps[0]);
+                                  //check that the code only changes every 30 seconds
 }
 
 const SECRET_KEY : &str = "InsecureSecret1234";
