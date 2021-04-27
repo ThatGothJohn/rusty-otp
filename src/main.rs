@@ -2,7 +2,6 @@ use std::{convert::TryInto, time, thread, env, io};
 
 extern crate sha1;
 
-//TODO: better args parsing
 //TODO: better error handling
 
 fn hmac_sha1 (mut key: String, message: String) -> Result<String, ()> {
@@ -116,11 +115,14 @@ const SECRET_KEY : &str = "InsecureSecret1234";
 
 fn main() -> Result<(), ()>{
 
-    let mode = env::args().nth(1).unwrap_or("g".to_owned());
+    let mode = env::args().nth(1).unwrap_or("help".to_owned());
+
+
     let mut move_one_line_up_and_clear_line = "";
     let mut white = "";
     let mut red = "";
     let mut purple = "";
+
 #[cfg(unix)]
 {
     move_one_line_up_and_clear_line = "\x1b[1A\x1b[2K";
@@ -130,8 +132,22 @@ fn main() -> Result<(), ()>{
 }
 
     match mode.as_str() {
-        "g"=>{
-            println!("{}Generator mode!\n",white);
+        "help"    |
+        "--help"  =>
+        {
+            println!("{}Usage: rusty-otp [OPTION]\
+                        \nGenerate or Verify Time-based One Time Passwords\
+                        \n\
+                        \n\t-g, --generator  generate totp codes\
+                        \n\t-v, --verifier   verify totp codes\
+                        \n\
+                        \n\t--help     display this help and exit
+                        \nWithout any OPTION, display this help and exit",white);
+        },
+        "g"             |
+        "-g"            |
+        "--generator"   =>{
+            print!("{}Generator mode!\n",white);
             loop {
                 let time_remaining = 30-(time::SystemTime::now().
                     duration_since(time::UNIX_EPOCH).unwrap().as_secs() % 30);
@@ -142,7 +158,9 @@ fn main() -> Result<(), ()>{
                 thread::sleep(time::Duration::from_millis(100));
             }
         },
-        "v"=>{
+        "v"             |
+        "-v"            |
+        "--verifier"    =>{
             println!("{}Verifier mode!\n",white);
             let mut input : String;
             loop {
