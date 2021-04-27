@@ -37,7 +37,9 @@ fn hmac_sha1 (mut key: String, message: String) -> Result<String, ()> {
 }
 
 fn dynamic_truncation (hmac_string : String) -> Result<String, ()> {
-    //FIXME: do better error handling, such as a hexidecimal digit check
+    //FIXME: do better error handling
+    assert!(hmac_string.chars().all(|c| c.is_ascii_hexdigit()));
+            //ensure the string passed in is only comprised of hexadecimal digits
     let offset : usize = hmac_string.chars().last().unwrap().to_digit(16).unwrap().try_into().unwrap();
 
     let truncated = hmac_string.as_str()[offset*2..offset*2+8].to_owned();
